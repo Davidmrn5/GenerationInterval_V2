@@ -20,4 +20,8 @@ Generation Interval is currently under development, the steps will be:
 
 - Deploying as public web application, it is important to select the service and how we want to publicly serve the application. Also relevant to see where to upload the data so we can access it seamlessly.
 
-**
+**Other ideas** I want to keep a list of things that come to my mind and could be done in the future:
+
+- Migrating csv files to RDBMS so we can use it with SQL (check SQLAlchemy to use it as a Pythonic approach).
+- Once decided where the databases will be stored, we could dockerize the app. This way anyone could download it from this repo and use it out of the box.
+
