@@ -1,6 +1,6 @@
 # ROADMAP
 
-The ultimate goal of this repository is to store the visualization and data filtering code needed to create and deploy a web application. The application will be built using FastAPI web framework, embedding panel (bokeh) which is the reason for the directory structure that it will have.
+The ultimate goal of this repository is to store the visualization and data filtering codebase needed to create the plots and then deploy a web application, hence the structure of the repository. The application will be built using panel based mainly on bokeh plots.
 
 In the future, we aim to deploy Generation Interval as a standalone web application, but for the moment no public deployment of the app is online, and this repo only aims to store and document the code that selects data and creates the plots. The app will be able to be run in an HPC cluster through ssh tunnels. Datasets will, for the moment be stored in cluster.
 
