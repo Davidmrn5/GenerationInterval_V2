@@ -7,5 +7,5 @@
 #SBATCH -A genint2_develop
 
 source ~/.bashrc
-conda activate /faststorage/project/genint2_develop/GenerationInterval_V2/requirements/ssh_genint2/
+conda activate /home/dmartinpestana/miniforge3/envs/genint2_ssh/
 uvicorn --app-dir /faststorage/project/genint2_develop/GenerationInterval_V2/src main:app --reload
