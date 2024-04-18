@@ -8,4 +8,4 @@
 
 source ~/.bashrc
 conda activate /faststorage/project/genint2_develop/GenerationInterval_V2/requirements/ssh_genint2/
-uvicorn --app-dir /faststorage/project/genint2_develop/GenerationInterval_V2/src main:app --reload
+uvicorn --app-dir /faststorage/project/genint2_develop/GenerationInterval_V2/src main:app
