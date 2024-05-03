@@ -57,9 +57,13 @@ def app_instance():
     list_widgets_1 = [datas_1, regs_1, mpp_1, chrms_1, ancs_1, var_1, facet_1]
     list_widgets_2 = [datas_2, regs_2, mpp_2, chrms_2, ancs_2, var_2, facet_2]
 
+    # Plot specific
+    hist_bins = pn.widgets.IntSlider(
+    name="Histogram bins", value=50, start=1, end=100, step=1, visible=False)
+
     widgets_1 = pn.Row(datas_1, regs_1, mpp_1, chrms_1, ancs_1)
     widgets_2 = pn.Row(datas_2, regs_2, mpp_2, chrms_2, ancs_2)
-    plot_options = pn.Row(var_1, var_2, facet_1, facet_2, color, plot_selector)
+    plot_options = pn.Row(var_1, var_2, facet_1, facet_2, color, plot_selector, hist_bins)
 
 
     # Selected dimension
@@ -74,6 +78,12 @@ def app_instance():
             for widget in list_widgets_2:
                 widget.visible = True
 
+    @pn.depends(plot=plot_selector, watch=True)
+    def _selected_plot(plot):
+        if plot_selector.value == "Histogram":
+            hist_bins.visible = True
+        elif plot_selector.value != "Histogram":
+            hist_bins.visible = False
 
     # Data loading and plotting
     @pn.depends(but_press=data_load_but)
@@ -89,6 +99,13 @@ def app_instance():
                         lazy_dim1, var_1.value, facet_1.value, color.value
                     )
                     layout[1] = violin_plot
+
+                if plot_selector.value == "Histogram":
+                    histogram = plot_histogram(
+                        lazy_dim1, var_1.value, facet_1.value, color.value, hist_bins.value
+                    )
+                    layout[1] = histogram
+
 
             elif dim_sel.value == "2D Plot":
                 df_dim1, df_dim2, df_joined = filter_ind_stat_2d(

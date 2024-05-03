@@ -12,10 +12,13 @@ from bokeh.models import (
     HoverTool,
     ColumnDataSource,
     CDSView,
-    GroupFilter,
+    GroupFilter, Quad, Legend, LegendItem
 )
 from bokeh.transform import jitter
 from bokeh.layouts import row, layout
+from bokeh.plotting import figure
+import numpy as np
+
 
 
 def combine_all():
@@ -395,4 +398,122 @@ def plot_violin(df, var_dim1, fac_1, col):
         fig.children[0].children[i].x_range = fig.children[0].children[0].x_range
         fig.children[0].children[i].y_range = fig.children[0].children[0].y_range
         fig.children[0].children[i - 1].toolbar_location = None
+    return fig
+
+
+def plot_histogram(df, var_dim1, fac_1, col, bins):
+
+    groups = ["col"]
+    if len(fac_1) > 0:
+        groups.append("fac_1")
+        if len(col) == 0:
+            df_dim1_col = df.with_columns(pl.lit(".").alias("col")).with_columns(
+                pl.concat_str([pl.col(fac_1)], separator="_").alias("fac_1")
+            )
+            colors_name = ""
+        elif len(col) > 0:
+            df_dim1_col = df.with_columns(
+                pl.concat_str([pl.col(col)], separator="_").alias("col")
+            ).with_columns(pl.concat_str([pl.col(fac_1)], separator="_").alias("fac_1"))
+            colors_name = "_".join(col)
+    else:
+        if len(col) == 0:
+            df_dim1_col = df.with_columns(
+                pl.concat_str([pl.col(fac_1)], separator="_").alias("fac_1")
+            )
+            colors_name = ""
+        elif len(col) > 0:
+            df_dim1_col = df.with_columns(
+                pl.concat_str([pl.col(fac_1)], separator="_").alias("fac_1")
+            )
+            colors_name = "_".join(col)
+
+    color_order = (
+        df_dim1_col.select((groups + [var_dim1]))
+        .group_by(groups)
+        .mean()
+        .select("col", var_dim1)
+        .group_by("col")
+        .mean()
+        .sort(var_dim1)
+        .select("col")
+        .collect()
+        .get_columns()
+    )[0].to_list()
+
+    colormap = {}
+    for i, color in enumerate(color_order):
+        colormap[color] = hv.Cycle("Colorblind").values[i]
+    order_dict = {idx: val for idx, val in enumerate(color_order)}
+
+    facet_list = (
+        (df_dim1_col.select("fac_1").unique().sort("fac_1").collect().get_columns())[0]
+    ).to_list()
+
+    df_dim1_col = (
+        df_dim1_col.sort(pl.col("col").replace(order_dict)).collect().to_pandas()
+    )
+
+    def plot_each_facet(facet_name):
+
+        plot_df = df_dim1_col.loc[df_dim1_col["fac_1"] == facet_name]
+        xran = plot_df[var_dim1].max() - plot_df[var_dim1].min()
+        single_histogram = figure(
+            height=600,
+            width=int(1920 / len(facet_list)),
+            x_axis_label=facet_name,
+            y_axis_label="Counts",
+            x_range=(
+                plot_df[var_dim1].min() - 0.25 * xran,
+                plot_df[var_dim1].max() + 0.25 * xran,
+            ),
+        )
+        legend_list = []
+        for color in colormap.keys():
+            top, edges = np.histogram(
+                plot_df.loc[plot_df["col"] == color, var_dim1],
+                density=False,
+                bins=bins,
+            )
+
+            source = ColumnDataSource(
+                {
+                    "top": top.tolist(),
+                    "left": edges[:-1].tolist(),
+                    "right": edges[1:].tolist(),
+                }
+            )
+            hist = Quad(
+                bottom=0,
+                top="top",
+                left="left",
+                right="right",
+                fill_color=colormap[color],
+                fill_alpha=0.6,
+                line_alpha=0,
+            )
+
+            single_histogram.add_glyph(source, hist)
+            legend_item = LegendItem(
+                label=color, renderers=[single_histogram.renderers[-1]]
+            )
+            legend_list.append(legend_item)
+
+        legend = Legend(items=legend_list, location="top_right")
+        single_histogram.toolbar.logo = None
+        single_histogram.tools = []
+        single_histogram.add_layout(legend)
+        single_histogram.xaxis.ticker.desired_num_ticks = 5
+        single_histogram.xaxis.formatter = PrintfTickFormatter(format="%0e")
+        return single_histogram
+
+    plot_list = [(plot_each_facet(facet_name)) for facet_name in facet_list]
+    fig = layout(row(plot_list, spacing=0))
+
+    for i in range(1, len(plot_list)):
+        fig.children[0].children[i].yaxis.visible = False
+        fig.children[0].children[i].y_range = fig.children[0].children[0].y_range
+        fig.children[0].children[i - 1].toolbar_location = None
+        fig.children[0].children[i - 1].legend.visible = False
+
     return fig
